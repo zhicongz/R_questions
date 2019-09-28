@@ -1,0 +1,55 @@
+When estimate MLE, I hope to directly estimate it by
+
+```R
+  # x are the observations
+  gamma_den <- function(para){
+    alp <- para[1]
+    bet <- para[2]
+    n <- length(x)
+    return(-(n*alp*log(bet)-n*log(gamma(alp))+(alp-1)*sum(log(x))-bet*sum(x)))
+  }
+
+  stats::optim(par = c(1,1), fn = gamma_den, method = "L-BFGS-B", lower = 0)
+```R
+
+or
+
+```R
+  gamma_den <- function(para){
+    -sum(stats::dgamma(x, para[1], para[2], log = TRUE))
+  }
+
+  stats::optim(par = c(1,1), fn = gamma_den, method = "L-BFGS-B", lower = 0)
+```
+
+Obviously, there is no difference between those two method except I don't need to 
+type the gamma density fundtion.
+Here, the problem is that when liklihood function is monotone in the domain, 
+the optim can't return the MLE. For example, 
+
+```R
+  x <- 1:10
+  stats::optim(par = c(1,1), fn = gamma_den, method = "L-BFGS-B", lower = 0)
+```
+
+returns errors.
+
+Some people mentioned that 'stats4::mle' is more robusted for mle.
+However, from the source code
+
+```R
+  oout <- if (length(start)) 
+    optim(start, f, method = method, hessian = TRUE, ...)
+  else list(par = numeric(), value = f(start))
+```
+the mle is also from 'optim' and the problem is not fixed.
+
+What I can do now is
+
+```R
+tryCatch(stats::optim(par = c(1,1), fn = gamma_den,
+                                        method = "L-BFGS-B",lower = 0)$par,
+                           error = function(e) NA)
+'''                           
+
+It works for no doubt but I sure if there might exist better solutions.
