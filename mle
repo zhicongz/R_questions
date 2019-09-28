@@ -23,8 +23,51 @@ or
 ```
 
 Obviously, there is no difference between those two method except I don't need to 
-type the gamma density fundtion.
-Here, the problem is that when liklihood function is monotone in the domain, 
+type the gamma density fundtion. 
+However, an additional benefit for using second method is the efficiency.
+
+```R
+x <- 1:1000
+fit_dist <- function(x){
+  nLL <- function(para){
+    shape <- para[1]
+    rate  <- para[2]
+    if(shape<=0 || rate<=0)
+      NA
+    else -sum(dgamma(x, shape, rate, log = TRUE))
+  }
+  
+  para_hat <- tryCatch(optim(par = c(1,1), fn = nLL,
+                                    method = "L-BFGS-B",lower = 0)$par,
+                       error = function(e) NA)
+}
+
+system.time({replicate(1000,fit_dist(1:1000))})
+
+
+fit_dist <- function(x){
+  nLL <- function(para){
+    alp <- para[1]
+    bet <- para[2]
+    if(shape<=0 || rate<=0)
+      NA
+    else{
+      n <- length(x)
+      return(-(n*alp*log(bet)-n*log(gamma(alp))+(alp-1)*sum(log(x))-bet*sum(x)))
+    }         
+  }
+  
+  para_hat <- tryCatch(stats::optim(par = c(1,1), fn = nLL,
+                                    method = "L-BFGS-B",lower = 0)$par,
+                       error = function(e) NA)
+}
+
+system.time({replicate(1000,fit_dist(1:1000))})
+```
+
+The second method is much faster than the first method even after removed 'stats::'
+
+Anyway, the problem is that when liklihood function is monotone in the domain, 
 the optim can't return the MLE. For example, 
 
 ```R
